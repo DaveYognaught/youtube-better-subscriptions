@@ -45,53 +45,56 @@ class Video {
         this.buttonId = this.isStored ? MARK_UNWATCHED_BTN : MARK_WATCHED_BTN;
         this.fuzzyDate = getVideoFuzzyDate(containingDiv);
 
-        log("Checking video " + this.videoId + " for premiere");
+        // Check if video is a premiere or a short
         let thumbOverlay = containingDiv.querySelector("ytd-thumbnail-overlay-time-status-renderer");
-        if (thumbOverlay == null) {
-            this.isPremiere = false;
-        } else {
-            this.isPremiere = thumbOverlay.getAttribute("overlay-style") === "UPCOMING";
-        }
+        this.isPremiere = thumbOverlay ? thumbOverlay.getAttribute("overlay-style") === "UPCOMING" : false;
+        let videoHref = containingDiv.querySelectorAll("a")[0]?.getAttribute("href");
+        this.isShort = videoHref ? videoHref.includes("shorts") || videoHref.includes("adurl") : true;
 
-        log("Checking video " + this.videoId + " for short");
-        let videoHref = containingDiv.querySelectorAll("a")[0].getAttribute("href");
-        if (videoHref != null) {
-            this.isShort = (videoHref.includes("shorts") || videoHref.includes("adurl"));
-        } else {
-            log("Video URL is null - ad.");
-            this.isShort = true;
-        }
-        log('video ' + this.videoId + " associated with date " + this.fuzzyDate)
-        if (this.fuzzyDate != null) {
-            this.isOlder = false;
-            log(this.fuzzyDate)
-            if (this.fuzzyDate.includes("month") || this.fuzzyDate.includes("year")) {
-                this.isOlder = true;
-            }
-            else if (this.fuzzyDate.includes("weeks") && hideOlderCutoff != "1 Month") {
-                this.isOlder = true;
-            }
-            else if (this.fuzzyDate.includes("day")) {
-                if (hideOlderCutoff == "Today") {
-                    this.isOlder = true;
-                }
-                else if (hideOlderCutoff == "1 Week" && Number(this.fuzzyDate.match(/\d+/)[0]) >= 7) {
-                    this.isOlder = true;
-                }
-            }
-        }
-        else{
-            this.isOlder = null;
-        }
-        log(`isOlder: ${this.isOlder} based on cutoff: ${hideOlderCutoff}`)
+        // Determine if the video is older than the cutoff period
+        this.isOlder = this.determineIfOlder();
+        
+        // Apply visibility logic
+        this.manageVisibility();
     }
 
-    hasButton() {
-        throw Error("Subclasses must implement hasButton method");
+    determineIfOlder() {
+        if (!this.fuzzyDate) return null;
+
+        if (this.fuzzyDate.includes("month") || this.fuzzyDate.includes("year")) {
+            return true;
+        } else if (this.fuzzyDate.includes("weeks") && hideOlderCutoff !== "1 Month") {
+            return true;
+        } else if (this.fuzzyDate.includes("day")) {
+            const daysAgo = Number(this.fuzzyDate.match(/\d+/)[0]);
+            if (hideOlderCutoff === "Today") return true;
+            if (hideOlderCutoff === "1 Week" && daysAgo >= 7) return true;
+        }
+        return false;
     }
 
-    addButton() {
-        throw Error("Subclasses must implement addButton method");
+    manageVisibility() {
+        // Skip clearing styles if this is a YouTube Short or Premiere
+        if (!this.isShort && !this.isPremiere) {
+            this.clearVisibilityStyles();
+        }
+
+        if (this.isOlder) {
+            this.hideOlder();  // Hide older videos with visibility:hidden
+        } else if (this.isStored && hideWatched) {
+            this.hide();  // Hide watched videos with display:none
+        }
+
+        // Additional visibility handling for Shorts and Premieres
+        if (this.isShort || this.isPremiere) {
+            this.hide();  // Explicitly hide Shorts and Premieres with display: none
+        }
+    }
+
+    clearVisibilityStyles() {
+        // Reset any visibility-related styles on the video container
+        this.containingDiv.style.display = '';
+        this.containingDiv.style.visibility = '';
     }
 
     hide() {
@@ -102,12 +105,10 @@ class Video {
 
     hideOlder() {
         older.push(this.containingDiv);
-        // if on chronological page, take up space to prevent layout shift
         this.containingDiv.style.visibility = 'hidden';
         this.containingDiv.classList.add(OLDER_CLASS);
-        // otherwise if on home page, hide and allow continuation of home page feed
+        // If on home page, apply display:none to prevent layout shift
         if (getCurrentPage() == PAGES.home) this.containingDiv.style.display = 'none';
-        // TODO: support setting toggle for hide behavior on various other pages, like channel pages
     }
 
     markWatched() {
@@ -119,14 +120,12 @@ class Video {
         }
 
         this.isStored = true;
-
         watchVideo(this.videoId);
         syncWatchedVideos();
     }
 
     markUnwatched() {
         unwatchVideo(this.videoId);
-
         syncWatchedVideos();
     }
 }
