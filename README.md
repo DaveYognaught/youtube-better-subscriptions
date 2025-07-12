@@ -1,4 +1,19 @@
-# Youtube better subscriptions
+# Youtube better subscriptions - Hiding Old Videos
+This is a fork of a fork. 
+That fork added functionality to hide old videos based on the date. This has SIGNIFICANT performance improvements for the original no longer actively maintained package. 
+Youtube loads 99 videos at once. If Youtube Better Subscriptions has several hundred hidden videos... well... you're loading 99 videos over... and over... and over....
+
+In effect, the Hiding Old Videos actually hides them, not removes them. Therefore, just 1 singular video call is made to Youtube. 
+This fork in particular fixes issues with the CSS and is keeping up to date with Youtube Layout changes. 
+
+It is, by extension of the original fork, scuffed. And a little jank. 
+The space is blank and empty.... that's... by design to block Youtube from loading new videos. 
+
+Just. Just take the Performance Improvements. Nerd.
+
+
+
+# ORIGINAL README. Youtube better subscriptions
 This plugin aims to make navigating YouTube's subscription grid easier by allowing users to hide watched videos.
 This plugin is in early development and will often change and (hopefully) include new features.
 
