@@ -16,13 +16,14 @@ function getVideoId(item) {
 }
 
 function getVideoFuzzyDate(item) {
-    let spans = item.querySelectorAll('.yt-content-metadata-view-model-wiz__metadata-row > span');
+    let spans = item.querySelectorAll('.yt-content-metadata-view-model__metadata-row > span');
     for (let span of spans) {
         if (/\d+ (second|minute|hour|day|week|month|year)s? ago/i.test(span.innerText)) {
-            return span.innerText;
+            return span.innerText.trim();
         }
     }
-    log("Unable to determine video date");
+    log("Unable to determine video date", item);
+    return null;
 }
 
 function changeMarkWatchedToMarkUnwatched(item) {

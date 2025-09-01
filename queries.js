@@ -8,7 +8,7 @@ function vidQuery() {
 }
 
 function sectionsQuery() {
-    return "ytd-item-section-renderer.style-scope.ytd-section-list-renderer";
+    return "ytd-rich-section-renderer.style-scope.ytd-rich-grid-renderer";
 }
 
 function sectionTitleQuery() {
