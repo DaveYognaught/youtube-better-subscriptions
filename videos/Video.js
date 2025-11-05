@@ -16,14 +16,24 @@ function getVideoId(item) {
 }
 
 function getVideoFuzzyDate(item) {
-    let spans = item.querySelectorAll('.yt-content-metadata-view-model__metadata-row > span');
+    let spans = item.querySelectorAll('div[class*="metadata-row"] span');
     for (let span of spans) {
-        if (/\d+ (second|minute|hour|day|week|month|year)s? ago/i.test(span.innerText)) {
-            return span.innerText.trim();
+        if (/\d+ (second|minute|hour|day|week|month|year)s? ago/i.test(span.textContent)) {
+            return span.textContent.trim();
         }
     }
     log("Unable to determine video date", item);
     return null;
+}
+
+function determineIfStream(item) {
+    let spans = item.querySelectorAll('div[class*="metadata-row"] span');
+    for (let span of spans) {
+        if (/Streamed \d+ (second|minute|hour|day|week|month|year)s? ago/i.test(span.textContent)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function changeMarkWatchedToMarkUnwatched(item) {
@@ -55,8 +65,25 @@ class Video {
         // Determine if the video is older than the cutoff period
         this.isOlder = this.determineIfOlder();
         
+		// Determine if a Stream VOD (Ewwww as fuck)
+		this.isStream = determineIfStream(containingDiv);
         // Apply visibility logic
         this.manageVisibility();
+    }
+
+    determineIfOlder() {
+        if (!this.fuzzyDate) return null;
+
+        if (this.fuzzyDate.includes("month") || this.fuzzyDate.includes("year")) {
+            return true;
+        } else if (this.fuzzyDate.includes("weeks") && hideOlderCutoff !== "1 Month") {
+            return true;
+        } else if (this.fuzzyDate.includes("day")) {
+            const daysAgo = Number(this.fuzzyDate.match(/\d+/)[0]);
+            if (hideOlderCutoff === "Today") return true;
+            if (hideOlderCutoff === "1 Week" && daysAgo >= 7) return true;
+        }
+        return false;
     }
 
     determineIfOlder() {
@@ -86,8 +113,8 @@ class Video {
             this.hide();  // Hide watched videos with display:none
         }
 
-        // Additional visibility handling for Shorts and Premieres
-        if (this.isShort || this.isPremiere) {
+        // Additional visibility handling for Shorts and Premieres and VODs for Streams
+        if (this.isShort || this.isPremiere || this.isStream) {
             this.hide();  // Explicitly hide Shorts and Premieres with display: none
         }
     }
